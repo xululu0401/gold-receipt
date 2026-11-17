@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小票上的克价 · 金饰今天回收能拿回多少、差在哪</title>
+<meta name="description" content="照着买金饰的小票填克重、克价、工费，再填买时和今天的大盘价、回收每克扣多少：算出今天回收拿回多少，亏的钱拆成工费溢价、金价变动、回收扣三块，大盘到多少才回本，同样的钱当时买金条会怎样。只算账，不预测金价。">
+<style>
+  :root{--bg:#efece6;--paper:#fffdf8;--ink:#23201a;--ink2:#545046;--mut:#8a8478;--line:#ddd6c8;--rule:#ece6da;--red:#a8372b;--ok:#2f6b4f;--gold:#b98a2e;--gold2:#e9d6a6;--key:#7d5512;--hi:#fbf1d8}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:22px 14px 72px}
+  h1{font-size:32px;line-height:1.2;margin:0 0 6px;letter-spacing:.04em}
+  .sub{color:var(--ink2);margin:0;font-size:15.5px}
+  .muted{color:var(--mut);font-size:13.5px}
+  .hide{display:none !important}
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .chip{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13.5px;color:var(--ink2)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px;align-items:start;margin-top:14px}
+  /* 小票 */
+  .slip{background:var(--paper);border:1px solid var(--line);padding:18px 18px 22px;position:relative;font-variant-numeric:tabular-nums;min-width:0}
+  .slip:before,.slip:after{content:"";position:absolute;left:0;right:0;height:8px;background:radial-gradient(circle at 6px 0,transparent 5px,var(--paper) 5.5px) 0 0/12px 8px repeat-x}
+  .slip:before{top:-8px;transform:scaleY(-1)} .slip:after{bottom:-8px}
+  .slip h2{font-size:15px;text-align:center;margin:0 0 2px;letter-spacing:.3em}
+  .slip .cap{text-align:center;color:var(--mut);font-size:12px;margin:0 0 10px}
+  .dash{border:0;border-top:1px dashed #cbc2b0;margin:12px 0}
+  .f{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:8px;align-items:center;margin:7px 0}
+  .f label{font-size:14px;color:var(--ink2)}
+  .f label small{display:block;color:var(--mut);font-size:11.5px;line-height:1.3}
+  .f input,.f select{width:100%;min-width:0;border:0;border-bottom:1px solid var(--line);background:transparent;padding:3px 2px;font-size:16px;text-align:right;border-radius:0}
+  .f input#name{text-align:right}
+  .f input:focus{outline:none;border-bottom-color:var(--gold)}
+  .seg{display:flex;gap:6px;justify-content:flex-end}
+  .seg button{border:1px solid var(--line);background:#fff;border-radius:4px;font-size:13px;padding:2px 8px;color:var(--ink2)}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .tot{display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin-top:4px}
+  .tot{gap:10px;align-items:baseline}
+  .tot span:first-child{white-space:nowrap}
+  .tot span:last-child{overflow-wrap:anywhere;text-align:right}
+  .bad{border-bottom-color:var(--red) !important;background:#fbeceb !important}
+  .err{background:#fbeceb;border:1px solid #e3b1aa;border-radius:6px;padding:10px 14px;color:var(--red);margin:0 0 14px}
+  .err ul{margin:4px 0 0;padding-left:20px}
+  /* 回收单 */
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin:0 0 14px;min-width:0}
+  .h3{font-size:15px;font-weight:700;margin:0 0 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .big{font-size:34px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .big.neg{color:var(--red)} .big.pos{color:var(--ok)}
+  .head{font-size:18px;font-weight:700;line-height:1.5;margin:6px 0;overflow-wrap:anywhere}
+  .why{color:var(--ink2);font-size:15px;margin:6px 0 4px;overflow-wrap:anywhere}
+  .wf{margin:12px 0 4px}
+  .wrow{display:grid;grid-template-columns:92px minmax(0,1fr) 108px;gap:8px;align-items:center;margin:5px 0;font-size:14px}
+  .wrow .lab{color:var(--ink2)}
+  .wrow .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+  .track{position:relative;height:22px;background:#f6f2e9;border-radius:3px;overflow:hidden}
+  .track i{position:absolute;top:0;bottom:0;border-radius:2px}
+  .t-pay{background:var(--ink)} .t-pre{background:var(--gold)} .t-mov{background:#c9725f} .t-mov.up{background:#79a88c} .t-ded{background:#9a948a} .t-rec{background:var(--ok)}
+  .acts{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px}
+  .act{background:#fff;border:1px solid #d9c49c;color:var(--key);border-radius:6px;padding:6px 10px;font-size:14px;text-align:left;overflow-wrap:anywhere}
+  .act:hover{background:var(--hi)}
+  table.lad{border-collapse:collapse;width:100%;font-size:14px}
+  .lad th,.lad td{border-bottom:1px solid var(--rule);padding:6px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lad th:first-child,.lad td:first-child{text-align:left}
+  .lad th{color:var(--mut);font-weight:600;font-size:12.5px}
+  .lad tr.now td{background:var(--hi);font-weight:700}
+  .lad tr.be td{color:var(--key);font-weight:700}
+  .lad td.neg{color:var(--red)} .lad td.pos{color:var(--ok)}
+  .tbl{overflow-x:auto}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:7px 13px;font-size:14px}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  details{margin-top:8px} summary{cursor:pointer;color:var(--ink2);font-size:14.5px}
+  details li{font-size:14px;color:var(--ink2)}
+  @media (max-width:760px){
+    .grid{grid-template-columns:minmax(0,1fr)}
+    .f{grid-template-columns:minmax(0,1fr) 116px}
+    .wrow{grid-template-columns:70px minmax(0,1fr) 92px;font-size:13px}
+    .big{font-size:28px}
+    .tot{font-size:16px}
+    h1{font-size:28px}
+    .lad{font-size:13px}
+    .lad th,.lad td{padding:5px 4px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>小票上的克价</h1>
+  <p class="sub">金价跌了，抽屉里那只金镯子今天拿去回收能拿回多少？照着买时的小票填克重、克价、工费，再填买时和今天的大盘价。亏的钱拆成三块：工费和店里的溢价、金价变动、回收扣的；再看大盘到多少才回本，同样的钱当时买金条会怎样。只算账，不预测金价。</p>
+  <div class="chips" id="presets"></div>
+  <p class="muted" id="presetNote"></p>
+
+  <div class="grid">
+    <section class="slip" aria-label="小票">
+      <h2>购 物 小 票</h2>
+      <p class="cap">照着当时的小票填 <span id="saveTag"></span></p>
+      <div class="f"><label for="name">品名</label><input id="name" maxlength="12"></div>
+      <div class="f"><label for="w">克重（克）<small>0.01–1,000</small></label><input id="w" inputmode="decimal"></div>
+      <div class="f"><label for="rho">成色（%）<small>足金填 100，18K 填 75</small></label><input id="rho" inputmode="decimal"></div>
+      <div class="f"><label>怎么卖的</label><div class="seg" id="pmSeg"><button type="button" id="pm_gram" data-pm="gram">按克</button><button type="button" id="pm_fixed" data-pm="fixed">一口价</button></div></div>
+      <div id="gramBox">
+        <div class="f"><label for="p">店内克价（元/克）<small>小票上那个「金价」</small></label><input id="p" inputmode="decimal"></div>
+        <div class="f"><label>工费怎么收</label><div class="seg" id="fmSeg"><button type="button" id="fm_piece" data-fm="piece">按件</button><button type="button" id="fm_gram" data-fm="gram">按克</button></div></div>
+        <div class="f"><label for="fee" id="feeLab">工费（元）</label><input id="fee" inputmode="decimal"></div>
+      </div>
+      <div id="fixedBox"><div class="f"><label for="fixed">一口价（元）</label><input id="fixed" inputmode="decimal"></div></div>
+      <div class="f"><label for="disc">优惠（元）<small>满减、会员价差</small></label><input id="disc" inputmode="decimal"></div>
+      <hr class="dash">
+      <div id="lines"></div>
+      <div class="tot"><span>实付</span><span id="paid">—</span></div>
+      <hr class="dash">
+      <div class="f"><label for="g0">买那天的大盘价（元/克）<small>银行或交易所的报价</small></label><input id="g0" inputmode="decimal"></div>
+      <div class="f"><label for="g1">今天的大盘价（元/克）</label><input id="g1" inputmode="decimal"></div>
+      <div class="f"><label for="r">回收每克扣（元）<small>按大盘价减去这么多收</small></label><input id="r" inputmode="decimal"></div>
+      <hr class="dash">
+      <div class="f"><label for="b">金条每克比大盘贵（元）<small>对照用</small></label><input id="b" inputmode="decimal"></div>
+      <div class="f"><label for="rb">金条回收每克扣（元）</label><input id="rb" inputmode="decimal"></div>
+    </section>
+
+    <div>
+      <div id="errBox" class="err hide"></div>
+      <section class="panel" id="okBox" aria-label="回收单">
+        <div class="h3">今天拿去回收</div>
+        <div class="big" id="big"></div>
+        <p class="head" id="headline"></p>
+        <div class="wf" id="wf"></div>
+        <p class="why" id="why"></p>
+        <div class="acts" id="acts"></div>
+      </section>
+      <section class="panel" id="ladPanel" aria-label="大盘到多少">
+        <div class="h3">大盘到多少，拿回多少 <span class="muted">只是一张对照表，不预测金价</span></div>
+        <div class="tbl"><table class="lad" id="lad"></table></div>
+        <p class="why" id="bar"></p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" style="margin-top:14px">
+    <div class="bar">
+      <button class="btn" id="dlPng" type="button">下载结果卡 PNG</button>
+      <button class="btn ghost" id="dlCsv" type="button">明细 CSV</button>
+      <button class="btn ghost" id="dlMd" type="button">Markdown</button>
+      <button class="btn ghost" id="dlJson" type="button">备份 JSON</button>
+      <button class="btn ghost" id="impJson" type="button">导入备份</button>
+      <input type="file" id="impFile" accept=".json,application/json" class="hide">
+      <button class="btn ghost" id="reset" type="button">回到默认</button>
+    </div>
+    <details>
+      <summary>怎么算的、算不了什么</summary>
+      <ul>
+        <li>实付：按克卖 = 克重 × 店内克价 + 工费 − 优惠；一口价 = 一口价 − 优惠。每一行四舍五入到分。</li>
+        <li>金子本身值多少 = 克重 × 成色 × 大盘价。回收拿回 = 克重 × 成色 × 今天大盘 − 克重 × 每克扣，扣完小于 0 按 0 算。</li>
+        <li>亏的钱正好拆成三块：工费和溢价 = 实付 − 买时金子值；金价变动 = 买时金子值 − 今天金子值；回收扣 = 今天金子值 − 拿回。三块加起来就是亏的钱，一分不差。</li>
+        <li>回本线：今天大盘最少到多少，回收拿回才不少于实付（精确到分）。只是一条线，不说它会不会到。</li>
+        <li>金条对照：同样的钱当时按「大盘 + 每克贵多少」买金条（克数不取整），今天按「大盘 − 每克扣多少」卖。</li>
+        <li>没算进去的：各家店真实的回收规则（有的按店内克价折算、有的另收检测费、有的只收本品牌）、旧换新、手工费返还、税费、钱放着的利息。成色按你填的算，不验真伪。</li>
+        <li>不预测金价、不建议买卖。默认的克重、价格都是虚构示例。</li>
+      </ul>
+    </details>
+  </section>
+  <p class="muted">全部在你的浏览器里算，不联网；设定自动存在本机。</p>
+</div>
+<script src="./core.js"></script>
+<script src="./ui.js"></script>
+</body>
+</html>
